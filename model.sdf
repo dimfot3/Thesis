@@ -1,0 +1,79 @@
+<sdf version="1.6">
+  <world name="empty">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="gz-sim-contact-system"
+      name="gz::sim::systems::Contact">
+    </plugin>
+	<plugin
+      filename="libgz-sim-sensors-system.so"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    
+	<include>
+	  <name>ground_plane</name>
+	  <uri>gp_models/ground.sdf</uri>
+	</include>
+    
+    
+    <include>
+	  <name>light_model</name>
+	  <uri>gp_models/light_model.sdf</uri>
+	</include>
+   
+    <include>
+	  <name>lidar_module</name>
+	  <uri>gp_models/lidar_module.sdf</uri>
+	  <pose>-1.7 0 1.5 0 0 0</pose>
+	</include>
+    
+    
+   	<include>
+	  <name>actor_model</name>
+	  <uri>human_models/actor_model.sdf</uri>
+	</include>
+	
+	
+	<include>
+		<name>table_1</name>
+		<uri>gp_models/reflective_table/table.sdf</uri>
+		<pose>3 0 0 0 0 0</pose>
+	</include>
+	
+	<include>
+		<name>walls</name>
+		<uri>gp_models/walls.sdf</uri>
+		<pose>1 0.2 1.5 0 0 0</pose>
+	</include>
+	
+	<include>
+		<uri>
+			https://fuel.gazebosim.org/1.0/OpenRobotics/models/VisitorChair
+		</uri>
+		<pose>3 0 0 0 0 1.57</pose>
+	</include>
+	
+	<include>
+	<uri>
+		https://fuel.gazebosim.org/1.0/OpenRobotics/models/MonitorAndKeyboard
+	</uri>
+	<pose>4 0 0.85 0 0 0</pose>
+	</include>
+  </world>
+</sdf>
