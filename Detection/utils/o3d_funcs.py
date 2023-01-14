@@ -222,3 +222,67 @@ def plot_frame_annotation_kitti(pcl_file, labels_file, box=True):
         colors[~annotations] = np.array([0, 0, 1])
         pcd.colors = o3d.utility.Vector3dVector(colors)
         o3d.visualization.draw_geometries([pcd])
+
+def range_projection(pcl_file, labels_file, fov_up=3.0, fov_down=-25.0, proj_H=64, proj_W=900, max_range=20):
+    """ Project a pointcloud into a spherical projection, range image.
+        Args:
+        current_vertex: raw point clouds
+        Returns:
+        proj_range: projected range image with depth, each pixel contains the corresponding depth
+        proj_vertex: each pixel contains the corresponding point (x, y, z, 1)
+        proj_intensity: each pixel contains the corresponding intensity
+        proj_idx: each pixel contains the corresponding index of the point in the raw point cloud
+    """
+    current_vertex = o3d_to_numpy(load_pcl(pcl_file))
+    columns = ['obs_angle', 'l', 'w', 'h', 'cx', 'cy', 'cz', 'rot_z', 'num_points']
+    labels = pd.read_csv(labels_file, sep=' ', header=None, names=columns)
+    annotations = get_point_annotations_kitti(numpy_to_o3d(current_vertex), labels, points_min=400)
+    # laser parameters
+    fov_up = fov_up / 180.0 * np.pi  # field of view up in radians
+    fov_down = fov_down / 180.0 * np.pi  # field of view down in radians
+    fov = abs(fov_down) + abs(fov_up)  # get field of view total in radians
+    
+    # get depth of all points
+    depth = np.linalg.norm(current_vertex[:, :3], 2, axis=1)
+    current_vertex = current_vertex[(depth > 0) & (depth < max_range)]  # get rid of [0, 0, 0] points
+    annotations = annotations[(depth > 0) & (depth < max_range)]
+    depth = depth[(depth > 0) & (depth < max_range)]
+
+    # get scan components
+    scan_x = current_vertex[:, 0]
+    scan_y = current_vertex[:, 1]
+    scan_z = current_vertex[:, 2]
+
+    # get angles of all points
+    yaw = -np.arctan2(scan_y, scan_x)
+    pitch = np.arcsin(scan_z / depth)
+
+    # get projections in image coords
+    proj_x = 0.5 * (yaw / np.pi + 1.0)  # in [0.0, 1.0]
+    proj_y = 1.0 - (pitch + abs(fov_down)) / fov  # in [0.0, 1.0]
+
+    # scale to image size using angular resolution
+    proj_x *= proj_W  # in [0.0, W]
+    proj_y *= proj_H  # in [0.0, H]
+
+    # round and clamp for use as index
+    proj_x = np.floor(proj_x)
+    proj_x = np.minimum(proj_W - 1, proj_x)
+    proj_x = np.maximum(0, proj_x).astype(np.int32)  # in [0,W-1]
+
+    proj_y = np.floor(proj_y)
+    proj_y = np.minimum(proj_H - 1, proj_y)
+    proj_y = np.maximum(0, proj_y).astype(np.int32)  # in [0,H-1]
+
+    # order in decreasing depth
+    order = np.argsort(depth)[::-1]
+    depth = depth[order]
+    curve = annotations[order]
+    proj_y = proj_y[order]
+    proj_x = proj_x[order]
+
+    proj_range = np.full((proj_H, proj_W), -1,
+                        dtype=np.float32)  # [H,W] range (-1 is no data)
+
+    proj_range[proj_y, proj_x] = curve
+    return proj_range
