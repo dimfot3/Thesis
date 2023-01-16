@@ -89,7 +89,8 @@ def get_3d_boxes(dflabels, points_min=300):
 
 def get_point_annotations_kitti(pcd, dflabels, points_min=300):
     """
-    anotate_pcl is used for annotation of https://jrdb.erc.monash.edu/
+    anotate_pcl is used for annotation of https://jrdb.erc.monash.edu/. The
+    annotations are in kitti format.
     It returns the 3d boxes of annotated pedestrians
 
     :param dflabels: the labels of annotated pointclouds
@@ -223,15 +224,19 @@ def plot_frame_annotation_kitti(pcl_file, labels_file, box=True):
         pcd.colors = o3d.utility.Vector3dVector(colors)
         o3d.visualization.draw_geometries([pcd])
 
-def range_projection(pcl_file, labels_file, fov_up=3.0, fov_down=-25.0, proj_H=64, proj_W=900, max_range=20):
-    """ Project a pointcloud into a spherical projection, range image.
-        Args:
-        current_vertex: raw point clouds
-        Returns:
-        proj_range: projected range image with depth, each pixel contains the corresponding depth
-        proj_vertex: each pixel contains the corresponding point (x, y, z, 1)
-        proj_intensity: each pixel contains the corresponding intensity
-        proj_idx: each pixel contains the corresponding index of the point in the raw point cloud
+def first_person_plot_kitti(pcl_file, labels_file, fov_up=15, fov_down=-15, proj_H=20, proj_W=500, max_range=20):
+    """
+    first_person_plot_kitti is used for https://jrdb.erc.monash.edu/
+    It projects 3d pointcloud into 2d plane (first person view)
+
+    :param pcl_file: the pointcloud (.bin) file
+    :param labels_file: the label file
+    :param fov_up: the up vertical field view of lidar in degrees
+    :param fov_down: the down vertical field view of lidar in degrees
+    :param proj_H: the vertical number of pixels in output image
+    :param proj_W: the horizontal number of pixels in output image
+    :param max_range: the maximum range of lidar to take into account
+    :return: 2d numpy which represents the 2d projection of 3d pointcloud
     """
     current_vertex = o3d_to_numpy(load_pcl(pcl_file))
     columns = ['obs_angle', 'l', 'w', 'h', 'cx', 'cy', 'cz', 'rot_z', 'num_points']
@@ -241,48 +246,38 @@ def range_projection(pcl_file, labels_file, fov_up=3.0, fov_down=-25.0, proj_H=6
     fov_up = fov_up / 180.0 * np.pi  # field of view up in radians
     fov_down = fov_down / 180.0 * np.pi  # field of view down in radians
     fov = abs(fov_down) + abs(fov_up)  # get field of view total in radians
-    
     # get depth of all points
     depth = np.linalg.norm(current_vertex[:, :3], 2, axis=1)
     current_vertex = current_vertex[(depth > 0) & (depth < max_range)]  # get rid of [0, 0, 0] points
     annotations = annotations[(depth > 0) & (depth < max_range)]
     depth = depth[(depth > 0) & (depth < max_range)]
-
     # get scan components
     scan_x = current_vertex[:, 0]
     scan_y = current_vertex[:, 1]
     scan_z = current_vertex[:, 2]
-
     # get angles of all points
     yaw = -np.arctan2(scan_y, scan_x)
     pitch = np.arcsin(scan_z / depth)
-
     # get projections in image coords
     proj_x = 0.5 * (yaw / np.pi + 1.0)  # in [0.0, 1.0]
     proj_y = 1.0 - (pitch + abs(fov_down)) / fov  # in [0.0, 1.0]
-
     # scale to image size using angular resolution
     proj_x *= proj_W  # in [0.0, W]
     proj_y *= proj_H  # in [0.0, H]
-
     # round and clamp for use as index
     proj_x = np.floor(proj_x)
     proj_x = np.minimum(proj_W - 1, proj_x)
     proj_x = np.maximum(0, proj_x).astype(np.int32)  # in [0,W-1]
-
     proj_y = np.floor(proj_y)
     proj_y = np.minimum(proj_H - 1, proj_y)
     proj_y = np.maximum(0, proj_y).astype(np.int32)  # in [0,H-1]
-
     # order in decreasing depth
     order = np.argsort(depth)[::-1]
     depth = depth[order]
     curve = annotations[order]
     proj_y = proj_y[order]
     proj_x = proj_x[order]
-
     proj_range = np.full((proj_H, proj_W), -1,
                         dtype=np.float32)  # [H,W] range (-1 is no data)
-
     proj_range[proj_y, proj_x] = curve
     return proj_range
