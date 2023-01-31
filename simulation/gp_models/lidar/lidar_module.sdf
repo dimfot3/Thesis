@@ -1,0 +1,40 @@
+<sdf version="1.6">
+	<model name="lidar_module">
+		<static>true</static>
+		<link name="lidar_frame">
+			<sensor name='gpu_lidar' type='gpu_lidar'>
+				<pose>0 0 0 0 0 0</pose>
+				<topic>lidar</topic>
+				<update_rate>10</update_rate>
+				<ray>
+					<scan>
+						<horizontal>
+						    <samples>1024</samples>
+						    <min_angle>0.0</min_angle>
+						    <max_angle>6.2831</max_angle>
+						</horizontal>
+						<vertical>
+						    <samples>64</samples>
+						    <min_angle>-0.2897</min_angle>
+						    <max_angle>0.2897</max_angle>
+						</vertical>
+					</scan>
+					<range>
+						<min>0.08</min>
+						<max>100</max>
+					</range>
+				</ray>
+				
+				<always_on>1</always_on>
+				<visualize>true</visualize>
+			</sensor>
+			<visual name="lidar_visual">
+				<geometry>
+					<mesh>
+				 		<uri>lidar_3d_v2.dae</uri>
+				 	</mesh>
+				 </geometry>
+			</visual>
+		</link>
+	</model>
+</sdf>
