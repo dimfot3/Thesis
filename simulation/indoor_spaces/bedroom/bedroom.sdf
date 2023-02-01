@@ -88,5 +88,11 @@
 	  <uri>indoor_spaces/bedroom/door.sdf</uri>
 	  <pose>3.98 -3 0 0 0 3.14159</pose>
 	</include>
+	
+	<include>
+	  <name>actor_model</name>
+	  <uri>human_models/actor_model.sdf</uri>
+	</include>
+	
   </world>
 </sdf>
