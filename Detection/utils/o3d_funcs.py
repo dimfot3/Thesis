@@ -29,6 +29,17 @@ def o3d_to_numpy(pcd):
     """
     return np.array(pcd.points)
 
+def pcl_voxel(pcd, voxel_size=0.1):
+    """
+    Voxelizes a point cloud based on a constant output point size.
+
+    :param pcd: The input point cloud to voxelize.
+    :param voxel_size: The size of the output points of the voxelized point cloud.
+    :return: The voxelized point cloud.
+    """
+    voxeld_pcd = pcd.voxel_down_sample(voxel_size)
+    return voxeld_pcd
+
 def numpy_to_o3d(pcl):
     """
     numpy_to_o3d transforms a numpy array to open3d Pointcloud
@@ -91,7 +102,7 @@ def get_point_annotations_kitti(pcd, dflabels, points_min=300):
     """
     anotate_pcl is used for annotation of https://jrdb.erc.monash.edu/. The
     annotations are in kitti format.
-    It returns the 3d boxes of annotated pedestrians
+    It returns the points inside the 3d boxes of annotated objects
 
     :param dflabels: the labels of annotated pointclouds
     :return: the 3d boxes as list of open3d.geometry.OrientedBoundingBox
@@ -102,7 +113,7 @@ def get_point_annotations_kitti(pcd, dflabels, points_min=300):
         if(dflabels['num_points'][i] < points_min):
             continue
         center = np.array([dflabels['cx'][i], dflabels['cy'][i], dflabels['cz'][i]])
-        r = rot_mat.from_euler('z', dflabels['rot_z'][i], degrees=False).as_matrix()
+        r = rot_mat.from_euler('z', -dflabels['rot_z'][i], degrees=False).as_matrix()
         size = np.array([dflabels['l'][i], dflabels['w'][i], dflabels['h'][i]])
         box3d = np.asarray(o3d.geometry.OrientedBoundingBox(center, r, size).get_box_points())
         minx, maxx = box3d[:, 0].min(), box3d[:, 0].max()
@@ -111,6 +122,49 @@ def get_point_annotations_kitti(pcd, dflabels, points_min=300):
         annotations = annotations | ((pcl[:, 0] > minx) & (pcl[:, 0] < maxx) & (pcl[:, 1] > miny) & \
              (pcl[:, 1] < maxy) & (pcl[:, 2] > minz) & (pcl[:, 2] < maxz))
     return annotations
+
+def split_3d_point_cloud_overlapping(pcd, annotations, box_size, overlap_pt):
+    """
+    Splits a 3D point cloud into overlapping boxes of a given size.
+    :param pcd: numpy array of shape (N,3) containing the 3D point cloud
+    :param annotations: mask array where True means point belongs to human
+    :param box_size: the size of the boxes to split the point cloud into
+    :param overlap_pt: the overlap between adjacent boxes as percentage (0, 1)
+    :return: a list of tuples, each tuple containing a numpy array of shape (M,3) representing the points in the box,
+             and a tuple of the box center coordinates. The points in the box are expressed in its center coordinates.
+    """
+    # Calculate the range of the point cloud in each dimension
+    range_x = np.ptp(pcd[:, 0])
+    range_y = np.ptp(pcd[:, 1])
+    range_z = np.ptp(pcd[:, 2])
+    overlap = overlap_pt * box_size
+    # Calculate the number of boxes needed in each dimension
+    num_boxes_x = int(np.ceil((range_x - box_size) / (box_size - overlap))) + 1
+    num_boxes_y = int(np.ceil((range_y - box_size) / (box_size - overlap))) + 1
+    num_boxes_z = int(np.ceil((range_z - box_size) / (box_size - overlap))) + 1
+    # Initialize list of boxes
+    boxes = []
+    annotations_splitted = []
+    # Loop over all boxes
+    for i in range(num_boxes_x):
+        for j in range(num_boxes_y):
+            for k in range(num_boxes_z):
+                # Calculate the box center coordinates
+                center_x = np.min(pcd[:, 0]) + (box_size - overlap) * i + box_size / 2
+                center_y = np.min(pcd[:, 1]) + (box_size - overlap) * j + box_size / 2
+                center_z = np.min(pcd[:, 2]) + (box_size - overlap) * k + box_size / 2
+                # Get the points inside the box
+                mask = ((pcd[:, 0] >= center_x - box_size / 2) & (pcd[:, 0] < center_x + box_size / 2)
+                        & (pcd[:, 1] >= center_y - box_size / 2) & (pcd[:, 1] < center_y + box_size / 2)
+                        & (pcd[:, 2] >= center_z - box_size / 2) & (pcd[:, 2] < center_z + box_size / 2))
+                center = np.array([center_x, center_y, center_z])
+                points_in_box = pcd[mask] - center
+                annotations_in_box = annotations[mask]
+                # Add the box to the list if it contains any points
+                if points_in_box.shape[0] > 300:
+                    boxes.append((points_in_box, center))
+                    annotations_splitted.append(annotations_in_box)
+    return boxes, annotations_splitted
 
 def plot_animation_lcas(path, lebels_path, frame_pause=0.5):
     """
@@ -223,6 +277,24 @@ def plot_frame_annotation_kitti(pcl_file, labels_file, box=True):
         colors[~annotations] = np.array([0, 0, 1])
         pcd.colors = o3d.utility.Vector3dVector(colors)
         o3d.visualization.draw_geometries([pcd])
+
+
+def plot_frame_annotation_kitti_v2(pcd, annotations):
+    """
+    plot_frame_annotation_kitti_v2 is used for https://jrdb.erc.monash.edu/
+    It plots a single frame pcl with its annotations. 
+
+    :param pcl_file: the pointcloud in numpy format
+    :param annotations: masking array that annotates humans
+    :param box: if True points the annotations in 3d box format else prints the points
+    :return: None
+    """
+    pcd = numpy_to_o3d(pcd)
+    colors = np.zeros((len(pcd.points), 3))
+    colors[annotations] = np.array([1, 0, 0])
+    colors[~annotations] = np.array([0, 0, 1])
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    o3d.visualization.draw_geometries([pcd])
 
 def first_person_plot_kitti(pcl_file, labels_file, fov_up=15, fov_down=-15, proj_H=20, proj_W=500, max_range=20):
     """
