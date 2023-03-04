@@ -3,7 +3,7 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 import os
 import yaml
-
+import subprocess
 
 def parse_arguments():
     args = {}
@@ -21,12 +21,29 @@ def parse_arguments():
         args['lidars'][lidar] = args_yaml[lidar]
     return args
 
+def generate_lidars(lidars):
+    for i, lidar_name in enumerate(lidars.keys()):
+        lidar = lidars[lidar_name]
+        subprocess.call(" ".join(["xacro", f"./gp_models/lidar/lidar_module.xacro", 
+                        f"channels:={lidar['channels']} x:={lidar['x']} y:={lidar['y']} z:={lidar['z']} name:={lidar_name}",
+                          f"> ./gp_models/lidar/lidar_{i + 1}.sdf"]), shell=True) 
+
+def generate_humans(humans):
+    pass
+
+def generate_world(world_name, lidars, humans):
+    subprocess.call(" ".join(["xacro", f"./indoor_spaces/{world_name}/{world_name}.xacro", 
+                        f"lidar_n:={len(list(lidars.keys()))}",
+                          f"> ./indoor_spaces/{world_name}/{world_name}.sdf"]), shell=True) 
+
 def generate_launch_description():
     # load arguments
     args = parse_arguments()
     simulation_env_arg = args['simulation_env']
     rviz2_arg = args['rviz2']
-
+    generate_lidars(args['lidars'])
+    generate_humans(args['humans'])
+    generate_world(args['simulation_env'], args['lidars'], args['humans'])
     # set environment paths
     os.environ['AMENT_PREFIX_PATH'] +=f':{os.getcwd()}/ros_packages/install/gazebo_to_ros2'
 
@@ -53,3 +70,4 @@ def generate_launch_description():
     if rviz2_arg: ld.add_action(rviz2_node)
     return ld
 
+generate_launch_description()

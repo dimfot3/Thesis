@@ -1,11 +1,21 @@
-<sdf version="1.6">
+<?xml version="1.0"?>
+<sdf version="1.6" xmlns:xacro="http://www.ros.org/wiki/xacro">
+   <xacro:arg name="name" default="lidar" />
+   <xacro:arg name="channels" default="32" />
+   <xacro:arg name="x" default="0" />
+   <xacro:arg name="y" default="0" />
+   <xacro:arg name="z" default="3" />
+   <xacro:arg name="rx" default="0" />
+   <xacro:arg name="ry" default="0" />
+   <xacro:arg name="rz" default="0" />
+   <xacro:arg name="rate" default="10" />
 	<model name="lidar_module">
 		<static>true</static>
-		<link name="lidar_frame">
+		<pose>$(arg x) $(arg y) $(arg z) $(arg rx) $(arg ry) $(arg rz)</pose>
+		<link name="$(arg name)">
 			<sensor name='gpu_lidar' type='gpu_lidar'>
-				<pose>0 0 0 0 0 0</pose>
-				<topic>lidar</topic>
-				<update_rate>10</update_rate>
+				<topic>$(arg name)</topic>
+				<update_rate>$(arg rate)</update_rate>
 				<ray>
 					<scan>
 						<horizontal>
@@ -14,7 +24,7 @@
 						    <max_angle>6.2831</max_angle>
 						</horizontal>
 						<vertical>
-						    <samples>64</samples>
+						    <samples>$(arg channels)</samples>
 						    <min_angle>-0.2897</min_angle>
 						    <max_angle>0.2897</max_angle>
 						</vertical>
