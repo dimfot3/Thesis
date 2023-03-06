@@ -1,0 +1,9 @@
+[submodule "Thesis_Detection"]
+	path = Thesis_Detection
+	url = https://github.com/dimfot3/Thesis_Detection.git
+[submodule "Thesis_Simulation"]
+	path = Thesis_Simulation
+	url = https://github.com/dimfot3/Thesis_Simulation.git
+[submodule "Thesis_UnitTests"]
+	path = Thesis_UnitTests
+	url = https://github.com/dimfot3/Thesis_Simulation.git
