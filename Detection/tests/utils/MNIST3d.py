@@ -11,8 +11,8 @@ class MNIST3D(Dataset):
     NUM_CLASSIFICATION_CLASSES = 10
     POINT_DIMENSION = 3
 
-    def __init__(self, num_points):
-        self.dataset = MNIST(root='./data', train=True, download=True)
+    def __init__(self, num_points, root_path='./data'):
+        self.dataset = MNIST(root=root_path, train=True, download=True)
         self.number_of_points = num_points
 
     def __len__(self):
