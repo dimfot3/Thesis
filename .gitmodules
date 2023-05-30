@@ -7,3 +7,6 @@
 [submodule "Thesis_UnitTests"]
 	path = Thesis_UnitTests
 	url = https://github.com/dimfot3/Thesis_UnitTests.git
+[submodule "thesis_simulation"]
+	path = thesis_simulation
+	url = ./thesis_simulation/
