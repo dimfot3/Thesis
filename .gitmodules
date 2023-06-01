@@ -1,6 +1,6 @@
 [submodule "thesis_detection"]
 	path = thesis_detection
-	url = ./thesis_detection
+	url = https://github.com/dimfot3/thesis_detection.git
 [submodule "thesis_simulation"]
         path = thesis_simulation
         url = https://github.com/dimfot3/thesis_simulation.git
