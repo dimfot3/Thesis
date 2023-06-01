@@ -1,6 +1,6 @@
 # Thesis
 ## Overview
-The repository is code of my academic thesis [[1]](#1) at Aristotle University of Thessaloniki's Department of Electrical and Computer Engineering. The main objective of the thesis was to investigate digital indoor reconstruction and human detection algorithms using LiDAR technology. The project contain two subprojects that can be exploited together or seperately. The first is thesis simulation [[2]](#2) that contain implementation of indoor simulation monitoring by simulated LiDAR. The second is thesis detection systems [[3]](#3) that contain plane and human detection systems.
+The repository contains the code for my academic thesis [[1]](#1) in the Department of Electrical and Computer Engineering at Aristotle University of Thessaloniki. The thesis' major goal was to examine at digital indoor reconstruction and human detection algorithms using LiDAR technology. The project includes two subprojects that can be used in together or separately. The first is thesis simulation [[2]](#2), which includes indoor simulation monitoring with simulated LiDAR. The second is thesis detection systems [[3]](#3), which includes plane and human detection systems.
 
 ## Links and Citations
 <a id="1">[1]</a> Thesis report: https://drive.google.com/file/d/1bU3LGlbmP9Ni8-itYjfeBEJv9t3pE1vR/view?usp=sharing <br>
